@@ -61,6 +61,8 @@
   .video-box{margin:0 auto;max-width:860px}
   .video-box.medio{max-width:560px}
   .video-box.vertical{max-width:400px}
+  .bloco.duo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start;max-width:680px;margin-left:auto;margin-right:auto}
+  .bloco.duo .video-box{max-width:none}
   .video-tela{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000 center/cover no-repeat;box-shadow:var(--sombra)}
   .video-box.vertical .video-tela{aspect-ratio:9/16}
   .video-tela video{display:block;width:100%;height:100%;object-fit:contain;background:#000}
@@ -530,7 +532,28 @@
         return;
       }
 
-      if (b.video) {
+      if (b.video && b.fotos && b.fotos.length) {
+        var vd2 = acharArquivo(c.videos, b.video);
+        var f2 = acharArquivo(c.fotos, b.fotos[0]);
+        if (vd2 && f2) {
+          usadas[vd2.id] = true; usadas[f2.id] = true;
+          var duo = el('div', 'bloco duo');
+          var cf = el('div', 'fotos-bloco n1');
+          cf.appendChild(imgFoto(f2, 900));
+          var vv = videoPlayer(vd2, 'medio', b.formato === 'horizontal' ? '' : 'vertical');
+          if (b.lado === 'esquerda') { duo.appendChild(vv); duo.appendChild(cf); }
+          else { duo.appendChild(cf); duo.appendChild(vv); }
+          raiz.appendChild(duo);
+          return;
+        }
+        if (vd2) {
+          usadas[vd2.id] = true;
+          var bv2 = el('div', 'bloco');
+          bv2.appendChild(videoPlayer(vd2, b.tamanho, b.formato));
+          raiz.appendChild(bv2);
+          return;
+        }
+      } else if (b.video) {
         var vd = acharArquivo(c.videos, b.video);
         if (vd) {
           usadas[vd.id] = true;
