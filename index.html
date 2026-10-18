@@ -87,6 +87,22 @@
   .voz-wa .voz-onda i.on{background:#54656f}
   .voz-ponto{position:absolute;top:50%;left:0;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:#53bdeb}
 
+  .voz-wa.recebido{background:#fff;border:1px solid rgba(0,0,0,.06)}
+  .voz-caixa{max-width:340px;margin:0 auto}
+  .voz-caixa .voz{margin:0;max-width:none}
+  .voz-de,.voz-enc{display:inline-block;margin:0 0 6px 4px;padding:2px 10px;border-radius:999px;background:var(--painel);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font:.82rem system-ui,sans-serif}
+  .voz-de{font-weight:700;color:#0a8f72;margin-right:6px}
+  .voz-enc{font-style:italic;color:var(--mut)}
+  .bloco.duo-audio{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:20px;align-items:center;max-width:820px;margin-left:auto;margin-right:auto}
+  .bloco.duo-audio.inv{grid-template-columns:minmax(0,1fr) minmax(0,380px)}
+  .bloco.duo-audio .voz{max-width:340px;margin:0}
+  .bloco.duo-audio .voz-caixa{margin:0}
+  @media (max-width:640px){
+    .bloco.duo-audio,.bloco.duo-audio.inv{grid-template-columns:minmax(0,1fr);justify-items:center;gap:16px}
+    .bloco.duo-audio .fotos-bloco{order:-1;width:100%;max-width:380px}
+    .bloco.duo-audio .voz,.bloco.duo-audio .voz-caixa{width:100%}
+  }
+
   .fotos{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;align-items:start;padding-top:2px}
   .fotos img{grid-column:span 2}
   .fotos img.g{grid-column:span 6;max-width:560px;justify-self:center}
@@ -451,8 +467,10 @@
   }
 
   // Player de áudio estilo Instagram ou WhatsApp
-  function vozPlayer(a, estilo) {
+  function vozPlayer(a, estilo, opc) {
+    opc = opc || {};
     var w = el('div', 'voz ' + (estilo === 'instagram' ? 'voz-ig' : 'voz-wa'));
+    if (estilo !== 'instagram' && (opc.recebido || opc.encaminhado)) w.classList.add('recebido');
     var btn = el('button', 'voz-play');
     btn.type = 'button';
     btn.setAttribute('aria-label', 'Tocar áudio');
@@ -523,7 +541,13 @@
     };
 
     carregar();
-    return w;
+    if (!opc.encaminhado && !opc.de) return w;
+    var cx = el('div', 'voz-caixa');
+    if (opc.de) cx.appendChild(el('span', 'voz-de', String(opc.de)));
+    if (opc.encaminhado) cx.appendChild(el('span', 'voz-enc', '↪ Encaminhada'));
+    cx.appendChild(el('br'));
+    cx.appendChild(w);
+    return cx;
   }
 
   // Player de vídeo: mostra a capa e baixa o vídeo quando chega perto da tela.
@@ -571,16 +595,42 @@
 
   function renderBlocos(c, raiz) {
     var usadas = {};
+    var anteriorAudio = null;
     c.blocos.forEach(function (b) {
       if (!b) return;
+      var eraAudio = anteriorAudio;
+      anteriorAudio = null;
 
-      if (b.audio) {
+      if (b.audio && b.fotos && b.fotos.length) {
+        var au2 = acharArquivo(c.audios, b.audio);
+        var f3 = acharArquivo(c.fotos, b.fotos[0]);
+        if (au2 && f3) {
+          usadas[au2.id] = true; usadas[f3.id] = true;
+          var da = el('div', 'bloco duo-audio' + (b.lado === 'esquerda' ? ' inv' : ''));
+          var cf3 = el('div', 'fotos-bloco n1');
+          cf3.appendChild(imgFoto(f3, 900, b.girar));
+          var ap = vozPlayer(au2, b.estilo, b);
+          if (b.lado === 'esquerda') { da.appendChild(ap); da.appendChild(cf3); }
+          else { da.appendChild(cf3); da.appendChild(ap); }
+          raiz.appendChild(da);
+          return;
+        }
+        if (au2) {
+          usadas[au2.id] = true;
+          var ba2 = el('div', 'bloco');
+          ba2.appendChild(vozPlayer(au2, b.estilo, b));
+          raiz.appendChild(ba2);
+          return;
+        }
+      } else if (b.audio) {
         var au = acharArquivo(c.audios, b.audio);
         if (au) {
           usadas[au.id] = true;
           var ba = el('div', 'bloco');
-          ba.appendChild(vozPlayer(au, b.estilo));
+          ba.appendChild(vozPlayer(au, b.estilo, b));
+          if (eraAudio) { eraAudio.style.marginBottom = '12px'; ba.style.marginTop = '12px'; }
           raiz.appendChild(ba);
+          anteriorAudio = ba;
         }
         return;
       }
@@ -718,7 +768,7 @@
       audios.forEach(function (a) {
         var w = el('div', 'item');
         w.appendChild(el('p', 'item-nome', semExt(a.nome)));
-        w.appendChild(vozPlayer(a, 'whatsapp'));
+        w.appendChild(vozPlayer(a, 'whatsapp', {}));
         ba.appendChild(w);
       });
     }
