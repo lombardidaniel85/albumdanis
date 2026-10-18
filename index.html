@@ -237,22 +237,46 @@
   }
   function esvaziarFila() { filaImg = filaImg.filter(function (t) { return t.fixo; }); }
 
-  // Baixa áudio/vídeo em pedaços e devolve um endereço local para tocar.
+  // Baixa áudio/vídeo em pedaços (3 ao mesmo tempo, com novas tentativas)
+  // e devolve um endereço local para tocar.
   function baixarMidia(id, progresso, ok, erro) {
-    var partes = [], mime = '';
-    function passo(ini) {
-      chamar('obterMidia', [id, ini], function (r) {
-        if (!mime && r.mime) mime = r.mime;
-        if (r.b64) partes.push(b64Bytes(r.b64));
-        if (r.b64 && r.fim < r.total) {
-          if (progresso) progresso(Math.round(r.fim / r.total * 100));
-          passo(r.fim);
-        } else {
-          ok(URL.createObjectURL(new Blob(partes, { type: mime || 'application/octet-stream' })));
-        }
-      }, erro);
+    var partes = [], mime = '', falhou = false, feitos = 0, n = 1;
+    function pedir(ini, tent, cb) {
+      chamar('obterMidia', [id, ini], cb, function (e) {
+        if (falhou) return;
+        if (tent < 3) { setTimeout(function () { pedir(ini, tent + 1, cb); }, 1500 * (tent + 1)); return; }
+        falhou = true;
+        if (erro) erro(e);
+      });
     }
-    passo(0);
+    function fim() {
+      ok(URL.createObjectURL(new Blob(partes, { type: mime || 'application/octet-stream' })));
+    }
+    pedir(0, 0, function (r) {
+      mime = r.mime || '';
+      var tam = r.fim || 0;
+      n = tam ? Math.ceil(r.total / tam) : 1;
+      partes[0] = r.b64 ? b64Bytes(r.b64) : new Uint8Array(0);
+      feitos = 1;
+      if (progresso) progresso(Math.round(feitos / n * 100));
+      if (n <= 1) { fim(); return; }
+      var prox = 1, ativos = 0;
+      function lancar() {
+        while (!falhou && ativos < 3 && prox < n) {
+          (function (i) {
+            ativos++;
+            pedir(i * tam, 0, function (rr) {
+              ativos--;
+              partes[i] = rr.b64 ? b64Bytes(rr.b64) : new Uint8Array(0);
+              feitos++;
+              if (progresso) progresso(Math.round(feitos / n * 100));
+              if (feitos === n) fim(); else lancar();
+            });
+          })(prox++);
+        }
+      }
+      lancar();
+    });
   }
 
   // ---------- fundo e lightbox ----------
@@ -268,6 +292,7 @@
   function abrir(img, id) {
     if (!img.src) return;
     lbId = id; lbImg.src = img.src; lb.style.display = 'flex';
+    if (img.getAttribute('data-girar')) return;
     carregarImg(id, 2000, function (u) { if (u && lbId === id) lbImg.src = u; }, true);
   }
   function fechar() { lbId = ''; lb.style.display = 'none'; lbImg.removeAttribute('src'); }
@@ -381,13 +406,36 @@
     return b;
   }
 
-  function imgFoto(f, w) {
+  // Gira uma imagem (data URL) em 90, 180 ou 270 graus.
+  function girarImagem(u, graus, cb) {
+    var im = new Image();
+    im.onload = function () {
+      try {
+        var c = document.createElement('canvas');
+        var lado = graus === 90 || graus === 270;
+        c.width = lado ? im.naturalHeight : im.naturalWidth;
+        c.height = lado ? im.naturalWidth : im.naturalHeight;
+        var x = c.getContext('2d');
+        x.translate(c.width / 2, c.height / 2);
+        x.rotate(graus * Math.PI / 180);
+        x.drawImage(im, -im.naturalWidth / 2, -im.naturalHeight / 2);
+        cb(c.toDataURL('image/jpeg', 0.9));
+      } catch (e) { cb(u); }
+    };
+    im.onerror = function () { cb(u); };
+    im.src = u;
+  }
+
+  function imgFoto(f, w, girar) {
     var i = document.createElement('img');
+    girar = ({ 90: 90, 180: 180, 270: 270, '-90': 270 })[String(girar)] || 0;
     i.alt = semExt(f.nome);
     i.className = 'esperando';
+    if (girar) i.setAttribute('data-girar', girar);
     carregarImg(f.id, w, function (u) {
-      i.classList.remove('esperando');
-      if (u) i.src = u; else i.classList.add('falhou');
+      if (!u) { i.classList.remove('esperando'); i.classList.add('falhou'); return; }
+      if (!girar) { i.classList.remove('esperando'); i.src = u; return; }
+      girarImagem(u, girar, function (v) { i.classList.remove('esperando'); i.src = v; });
     });
     i.onclick = function () { abrir(i, f.id); };
     return i;
@@ -508,8 +556,13 @@
         tela.textContent = '';
         tela.style.backgroundImage = 'none';
         tela.appendChild(v);
-      }, function () {
-        aviso.textContent = 'Não consegui carregar o vídeo.';
+      }, function (e) {
+        aviso.textContent = 'Não consegui carregar o vídeo. ' + textoErro(e);
+        aviso.style.whiteSpace = 'normal';
+        aviso.style.textAlign = 'center';
+        aviso.style.maxWidth = '90%';
+        comecou = false;
+        tela.onclick = function () { tela.onclick = null; aviso.textContent = 'Carregando vídeo…'; comecar(); };
       });
     }
     setTimeout(function () { observar(cx, comecar); }, 0);
@@ -539,7 +592,7 @@
           usadas[vd2.id] = true; usadas[f2.id] = true;
           var duo = el('div', 'bloco duo');
           var cf = el('div', 'fotos-bloco n1');
-          cf.appendChild(imgFoto(f2, 900));
+          cf.appendChild(imgFoto(f2, 900, b.girar));
           var vv = videoPlayer(vd2, 'medio', b.formato === 'horizontal' ? '' : 'vertical');
           if (b.lado === 'esquerda') { duo.appendChild(vv); duo.appendChild(cf); }
           else { duo.appendChild(cf); duo.appendChild(vv); }
@@ -551,6 +604,19 @@
           var bv2 = el('div', 'bloco');
           bv2.appendChild(videoPlayer(vd2, b.tamanho, b.formato));
           raiz.appendChild(bv2);
+          return;
+        }
+        if (!vd2) {
+          // Não achou o vídeo: mostra a foto com um aviso visível, para facilitar o conserto.
+          var duo2 = el('div', 'bloco duo');
+          var cf2 = el('div', 'fotos-bloco n1');
+          if (f2) { usadas[f2.id] = true; cf2.appendChild(imgFoto(f2, 900, b.girar)); }
+          var av = el('div', 'video-tela');
+          av.appendChild(el('div', 'video-aviso', 'Vídeo "' + b.video + '" não encontrado na pasta'));
+          av.firstChild.style.whiteSpace = 'normal'; av.firstChild.style.textAlign = 'center'; av.firstChild.style.maxWidth = '90%';
+          if (b.lado === 'esquerda') { duo2.appendChild(av); duo2.appendChild(cf2); }
+          else { duo2.appendChild(cf2); duo2.appendChild(av); }
+          raiz.appendChild(duo2);
           return;
         }
       } else if (b.video) {
@@ -576,7 +642,7 @@
       var caixaFotos = null;
       if (fs.length) {
         caixaFotos = el('div', 'fotos-bloco n' + Math.min(fs.length, 3));
-        fs.forEach(function (f) { caixaFotos.appendChild(imgFoto(f, fs.length === 1 ? (b.tamanho === 'medio' ? 900 : 1400) : 900)); });
+        fs.forEach(function (f) { caixaFotos.appendChild(imgFoto(f, fs.length === 1 ? (b.tamanho === 'medio' ? 900 : 1400) : 900, b.girar)); });
       }
       var nota = temTexto ? el('p', 'nota', String(b.texto)) : null;
 
