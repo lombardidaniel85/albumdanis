@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nosso álbum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,500;1,600&family=Fraunces:wght@500;700&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#faf7f2;--fg:#2b2622;--mut:#7a7068;--line:#e6dfd4;--acc:#b4533c;--painel:rgba(250,247,242,.80);--sombra:0 6px 24px rgba(0,0,0,.28)}
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#181513;--fg:#efe8df;--mut:#a59a8f;--line:#38322d;--acc:#e08a70;--painel:rgba(24,21,19,.78)}
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--fg);font:17px/1.7 'Lora',Georgia,'Times New Roman',serif}
+  #bg{position:fixed;inset:0;z-index:-1;background-color:#3b4a52;background-size:cover;background-position:center 40%;background-repeat:no-repeat;transition:background-image .4s}
+  #bg::after{content:"";position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.12),rgba(0,0,0,.12) 50%,rgba(0,0,0,.38))}
+
+  .hero{max-width:980px;margin:0 auto;min-height:78vh;padding:14px 16px 28px;display:flex;flex-direction:column;justify-content:space-between;color:#fff}
+  .hero.curto{min-height:56vh}
+  .hero-titulo .data{color:rgba(255,255,255,.88);font:.9rem system-ui,sans-serif;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+  .hero h1{font:700 clamp(2rem,6.5vw,3.8rem)/1.1 'Fraunces',Georgia,serif;margin:.15em 0 0;text-shadow:0 2px 20px rgba(0,0,0,.55)}
+  .hero h1 s{opacity:.75;text-decoration-thickness:.07em}
+  .corpo{max-width:980px;margin:0 auto;padding:0 16px 80px}
+
+  .voltar{background:var(--painel);color:var(--fg);border:0;border-radius:999px;padding:8px 14px;font:.95rem system-ui,sans-serif;cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+  #app > .voltar{display:block;margin:12px auto}
+
+  h2{font:600 .85rem/1.2 system-ui,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:var(--mut);margin:1.2em 0 .8em}
+  p{margin:.8em 0}
+  a{color:var(--acc)}
+  .data{color:var(--mut);font:.9rem system-ui,sans-serif}
+
+  .painel,.nota,.legenda,.card,.msg,.login{background:var(--painel);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-radius:14px}
+  .painel{padding:4px 18px 18px;margin:28px 0}
+  .nota{font:italic 600 clamp(1.6rem,4.4vw,2.3rem)/1.35 'Cormorant Garamond',Georgia,serif;padding:16px 20px;margin:24px 0}
+  .legenda{font-style:italic;border-left:3px solid var(--acc);padding:12px 16px;margin:24px 0}
+
+  .bloco{margin:32px 0}
+  .bloco.lado{display:grid;gap:22px;align-items:center}
+  .bloco.esq{grid-template-columns:minmax(0,1fr) minmax(0,2.2fr)}
+  .bloco.dir{grid-template-columns:minmax(0,2.2fr) minmax(0,1fr)}
+  .bloco.lado .nota{margin:0}
+  .fotos-bloco{display:grid;gap:10px;align-items:start}
+  .fotos-bloco.n1{grid-template-columns:1fr}
+  .fotos-bloco.n2{grid-template-columns:1fr 1fr}
+  .fotos-bloco.n3{grid-template-columns:repeat(3,1fr)}
+  .bloco.solo .fotos-bloco{grid-template-columns:minmax(0,560px);justify-content:center}
+  .bloco.solo.medio .fotos-bloco{grid-template-columns:minmax(0,380px)}
+  .fotos-bloco img,.fotos img{display:block;width:100%;height:auto;border-radius:10px;background:var(--line);box-shadow:var(--sombra);cursor:zoom-in}
+  img.esperando{aspect-ratio:3/4;animation:pulsa 1.4s ease-in-out infinite}
+  img.falhou{aspect-ratio:3/4;opacity:.5}
+  @keyframes pulsa{50%{opacity:.55}}
+  @media (max-width:640px){
+    .bloco.esq,.bloco.dir{grid-template-columns:1fr;gap:14px}
+    .hero{min-height:70vh}
+  }
+
+  .video-box{margin:0 auto;max-width:860px}
+  .video-box.medio{max-width:560px}
+  .video-box.vertical{max-width:400px}
+  .video-tela{position:relative;width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#000 center/cover no-repeat;box-shadow:var(--sombra)}
+  .video-box.vertical .video-tela{aspect-ratio:9/16}
+  .video-tela video{display:block;width:100%;height:100%;object-fit:contain;background:#000}
+  .video-aviso{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:6px 14px;font:.85rem system-ui,sans-serif;white-space:nowrap}
+
+  .voz{display:flex;align-items:center;gap:12px;max-width:340px;margin:0 auto;padding:10px 14px;box-shadow:var(--sombra);font-family:system-ui,sans-serif}
+  .voz button{border:0;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none}
+  .voz svg{width:20px;height:20px;fill:currentColor}
+  .voz-onda{position:relative;flex:1;display:flex;align-items:center;gap:2px;height:34px;cursor:pointer}
+  .voz-onda i{display:block;flex:1;min-width:2px;border-radius:2px}
+  .voz-tempo{flex:none;font-size:.78rem;min-width:2.8em;text-align:right;font-variant-numeric:tabular-nums}
+  .voz.carregando{opacity:.7}
+  .voz-ig{background:linear-gradient(135deg,#c20fcf,#7c28e8);border-radius:999px;color:#fff;padding-right:18px}
+  .voz-ig .voz-play{width:38px;height:38px;border-radius:50%;background:#fff;color:#8a2be2}
+  .voz-ig .voz-onda i{background:rgba(255,255,255,.45)}
+  .voz-ig .voz-onda i.on{background:#fff}
+  .voz-ig .voz-ponto{display:none}
+  .voz-wa{background:#d9fdd3;border-radius:14px;color:#54656f}
+  .voz-wa .voz-play{width:34px;height:34px;color:#54656f;background:none}
+  .voz-wa .voz-play svg{width:28px;height:28px}
+  .voz-wa .voz-onda i{background:#a8b8ad}
+  .voz-wa .voz-onda i.on{background:#54656f}
+  .voz-ponto{position:absolute;top:50%;left:0;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:#53bdeb}
+
+  .fotos{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;align-items:start;padding-top:2px}
+  .fotos img{grid-column:span 2}
+  .fotos img.g{grid-column:span 6;max-width:560px;justify-self:center}
+  .fotos img.m{grid-column:span 4}
+
+  .lista{display:grid;gap:10px;margin-top:1.2em}
+  .card{display:block;width:100%;text-align:left;border:1px solid var(--line);padding:14px 16px;color:inherit;font:inherit;cursor:pointer}
+  .card .t{font:700 1.2rem 'Fraunces',Georgia,serif}
+  .card .t s{opacity:.7}
+
+  .item{margin-bottom:18px}
+  .item-nome{margin:0 0 6px;color:var(--mut);font:.85rem system-ui,sans-serif}
+  .links{padding-left:1.2em}
+  .msg{display:block;max-width:420px;margin:30vh auto 0;text-align:center;color:var(--fg);padding:18px;font-family:system-ui,sans-serif}
+  .corpo .msg{margin:24px auto}
+
+  .login{max-width:380px;margin:18vh auto 0;padding:26px 22px;font-family:system-ui,sans-serif;text-align:center}
+  .login h1{font:700 2rem/1.1 'Fraunces',Georgia,serif;margin:0 0 .4em}
+  .login p{margin:.4em 0 1em;color:var(--mut);font-size:.95rem;line-height:1.5}
+  .login input{display:block;width:100%;font:1.05rem system-ui,sans-serif;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);margin:0 0 12px;text-align:center}
+  .login input.codigo{letter-spacing:.35em;font-size:1.4rem}
+  .login button{display:block;width:100%;font:600 1rem system-ui,sans-serif;padding:12px;border:0;border-radius:10px;background:var(--acc);color:#fff;cursor:pointer}
+  .login button:disabled{opacity:.6}
+  .login .link{background:none;color:var(--acc);font-weight:500;margin-top:10px;padding:6px}
+  .login .erro{color:#c0392b;min-height:1.4em;margin:8px 0 0;font-size:.9rem}
+
+  #lb{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:10;cursor:zoom-out}
+  #lb img{max-width:96vw;max-height:94vh;object-fit:contain}
+</style>
+</head>
+<body>
+<div id="bg"></div>
+<main id="app"></main>
+<div id="lb"><img alt=""></div>
+
+<script>
+(function () {
+  var app = document.getElementById('app');
+  var bgEl = document.getElementById('bg');
+  var lb = document.getElementById('lb');
+  var lbImg = lb.querySelector('img');
+  var API = 'https://script.google.com/macros/s/AKfycbzHM_jLxBIFKLj8uo9o6Yu4EwZNScsRywx3O-hMLqzfXAXTZ76kZTEE5yEH0RlyBTGp1Q/exec';
+  var inicial = (new URLSearchParams(location.search).get('c') || '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(inicial)) inicial = '';
+  var CHAVE = 'album_acesso';
+  var TOKEN = lerToken();
+  var tocando = null;
+  var fundoGlobal = '';
+  var fundoAtual = '';
+  var naTelaDeLogin = false;
+  var PLAY = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+  var PAUSE = '<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+
+  // ---------- utilidades ----------
+  function el(tag, cls, txt) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (txt != null) n.textContent = txt;
+    return n;
+  }
+  function lerToken() { try { return localStorage.getItem(CHAVE) || ''; } catch (e) { return ''; } }
+  function salvarToken(t) { TOKEN = t || ''; try { if (t) localStorage.setItem(CHAVE, t); else localStorage.removeItem(CHAVE); } catch (e) {} }
+  function limpar() {
+    if (tocando) { tocando.pause(); tocando = null; }
+    app.textContent = '';
+  }
+  function msg(t) { limpar(); app.appendChild(el('p', 'msg', t)); }
+  function fmtData(d) {
+    return /^\d{4}-\d{2}-\d{2}$/.test(d || '') ? d.split('-').reverse().join('/') : (d || '');
+  }
+  function semExt(n) { return String(n).replace(/\.[^.]+$/, ''); }
+  function mmss(s) {
+    if (!isFinite(s)) return '0:00';
+    s = Math.round(s);
+    return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
+  }
+  function textoErro(e) { return (e && e.message ? String(e.message) : String(e || '')).replace(/^(Error|Exception):\s*/, ''); }
+  function b64Bytes(b64) {
+    var bin = atob(b64), u8 = new Uint8Array(bin.length);
+    for (var m = 0; m < bin.length; m++) u8[m] = bin.charCodeAt(m);
+    return u8;
+  }
+  function observar(n, fn) {
+    if (!('IntersectionObserver' in window)) { fn(); return; }
+    var io = new IntersectionObserver(function (es) {
+      for (var i = 0; i < es.length; i++) if (es[i].isIntersecting) { io.disconnect(); fn(); return; }
+    }, { rootMargin: '900px 0px' });
+    io.observe(n);
+  }
+
+  // Texto com ~~riscado~~
+  function comRiscado(n, txt) {
+    String(txt).split(/(~~[^~]+~~)/).forEach(function (p) {
+      if (!p) return;
+      if (p.length > 4 && p.slice(0, 2) === '~~' && p.slice(-2) === '~~') n.appendChild(el('s', null, p.slice(2, -2)));
+      else n.appendChild(document.createTextNode(p));
+    });
+    return n;
+  }
+
+  // ---------- chamadas ao servidor ----------
+  // Conversa com o servidor (Apps Script) sem cookies do Google.
+  function gs(fn, args, ok, erro) {
+    var url = API + '?fn=' + encodeURIComponent(fn) + '&a=' + encodeURIComponent(JSON.stringify(args || []));
+    fetch(url, { credentials: 'omit', redirect: 'follow' })
+      .then(function (r) { return r.json(); })
+      .then(function (j) { return { j: j }; }, function (e) { return { e: e }; })
+      .then(function (o) {
+        if (o.e) { if (erro) erro(new Error('Sem conexão com o servidor. Tente de novo.')); return; }
+        if (o.j && o.j.erro) { if (erro) erro(new Error(o.j.erro)); return; }
+        ok(o.j ? o.j.r : undefined);
+      });
+  }
+  // Toda chamada leva o código de acesso deste aparelho.
+  function chamar(fn, args, ok, erro) {
+    gs(fn, [TOKEN].concat(args || []), ok, function (e) {
+      if (/SEM_ACESSO/.test(textoErro(e))) { telaLogin(); return; }
+      if (erro) erro(e);
+    });
+  }
+
+  // Fila de imagens: no máximo 3 ao mesmo tempo.
+  var cacheImg = {}, filaImg = [], ativos = 0;
+  function carregarImg(id, w, cb, prioridade) {
+    var k = id + '|' + w;
+    if (cacheImg[k]) { cb(cacheImg[k]); return; }
+    var t = { id: id, w: w, cb: cb, fixo: !!prioridade };
+    if (prioridade) filaImg.unshift(t); else filaImg.push(t);
+    proximaImg();
+  }
+  function proximaImg() {
+    while (ativos < 3 && filaImg.length) {
+      (function (t) {
+        ativos++;
+        chamar('obterImagem', [t.id, t.w], function (r) {
+          ativos--;
+          var u = 'data:' + r.mime + ';base64,' + r.b64;
+          cacheImg[t.id + '|' + t.w] = u;
+          t.cb(u);
+          proximaImg();
+        }, function () {
+          ativos--;
+          t.cb(null);
+          proximaImg();
+        });
+      })(filaImg.shift());
+    }
+  }
+  function esvaziarFila() { filaImg = filaImg.filter(function (t) { return t.fixo; }); }
+
+  // Baixa áudio/vídeo em pedaços e devolve um endereço local para tocar.
+  function baixarMidia(id, progresso, ok, erro) {
+    var partes = [], mime = '';
+    function passo(ini) {
+      chamar('obterMidia', [id, ini], function (r) {
+        if (!mime && r.mime) mime = r.mime;
+        if (r.b64) partes.push(b64Bytes(r.b64));
+        if (r.b64 && r.fim < r.total) {
+          if (progresso) progresso(Math.round(r.fim / r.total * 100));
+          passo(r.fim);
+        } else {
+          ok(URL.createObjectURL(new Blob(partes, { type: mime || 'application/octet-stream' })));
+        }
+      }, erro);
+    }
+    passo(0);
+  }
+
+  // ---------- fundo e lightbox ----------
+  function definirFundo(id) {
+    fundoAtual = id || '';
+    if (!id) { bgEl.style.backgroundImage = 'none'; return; }
+    carregarImg(id, 1600, function (u) {
+      if (u && fundoAtual === id) bgEl.style.backgroundImage = 'url("' + u + '")';
+    }, true);
+  }
+
+  var lbId = '';
+  function abrir(img, id) {
+    if (!img.src) return;
+    lbId = id; lbImg.src = img.src; lb.style.display = 'flex';
+    carregarImg(id, 2000, function (u) { if (u && lbId === id) lbImg.src = u; }, true);
+  }
+  function fechar() { lbId = ''; lb.style.display = 'none'; lbImg.removeAttribute('src'); }
+  lb.addEventListener('click', fechar);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') fechar(); });
+
+  // ---------- tela de acesso ----------
+  function telaLogin() {
+    if (naTelaDeLogin) return;
+    naTelaDeLogin = true;
+    salvarToken('');
+    filaImg = [];
+    definirFundo('');
+    limpar();
+    var box = el('div', 'login');
+    box.appendChild(el('h1', null, 'Nosso álbum'));
+    var texto = el('p', null, 'Este álbum é privado. Digite seu e-mail para receber um código de acesso.');
+    box.appendChild(texto);
+    var form = el('form');
+    var campo = el('input');
+    campo.type = 'email'; campo.autocomplete = 'email'; campo.placeholder = 'seu e-mail';
+    campo.required = true; campo.setAttribute('autocapitalize', 'off');
+    var botao = el('button', null, 'Enviar código');
+    botao.type = 'submit';
+    var erro = el('p', 'erro');
+    var outro = el('button', 'link', 'Usar outro e-mail');
+    outro.type = 'button'; outro.style.display = 'none';
+    form.appendChild(campo); form.appendChild(botao);
+    box.appendChild(form); box.appendChild(erro); box.appendChild(outro);
+    app.appendChild(box);
+
+    var email = '', etapa = 'email';
+    function ocupado(s) { botao.disabled = s; campo.disabled = s; }
+    function irParaCodigo() {
+      etapa = 'codigo';
+      texto.textContent = 'Se este e-mail tiver acesso, um código de 6 números chega nele em até 1 minuto. Olhe também o spam.';
+      campo.value = ''; campo.type = 'text'; campo.className = 'codigo';
+      campo.setAttribute('inputmode', 'numeric'); campo.autocomplete = 'one-time-code';
+      campo.maxLength = 6; campo.placeholder = '000000';
+      botao.textContent = 'Entrar';
+      outro.style.display = 'block';
+      campo.focus();
+    }
+    outro.onclick = function () { naTelaDeLogin = false; telaLogin(); };
+    form.onsubmit = function (e) {
+      e.preventDefault();
+      erro.textContent = '';
+      if (etapa === 'email') {
+        email = campo.value.trim();
+        if (!email) return;
+        ocupado(true);
+        gs('pedirCodigo', [email], function () { ocupado(false); irParaCodigo(); },
+          function (err) { ocupado(false); erro.textContent = textoErro(err); });
+      } else {
+        var cod = campo.value.replace(/\D/g, '');
+        if (cod.length !== 6) { erro.textContent = 'O código tem 6 números.'; return; }
+        ocupado(true);
+        gs('confirmarCodigo', [email, cod], function (r) {
+          ocupado(false);
+          if (r && r.ok) { salvarToken(r.token); naTelaDeLogin = false; iniciar(); }
+          else erro.textContent = (r && r.msg) || 'Não deu certo. Tente de novo.';
+        }, function (err) { ocupado(false); erro.textContent = textoErro(err); });
+      }
+    };
+    campo.focus();
+  }
+
+  // ---------- navegação ----------
+  function falha(e) {
+    limpar();
+    app.appendChild(el('p', 'msg', 'Não consegui abrir isso agora. ' + textoErro(e)));
+    var b = el('button', 'voltar', '← Ver todos os capítulos');
+    b.onclick = indice;
+    app.appendChild(b);
+  }
+  function indice() {
+    esvaziarFila();
+    msg('Carregando…');
+    chamar('listarCapitulos', [], renderIndice, falha);
+  }
+  function capitulo(ref) {
+    esvaziarFila();
+    msg('Carregando…');
+    chamar('obterCapitulo', [ref], renderCapitulo, falha);
+  }
+
+  function montarHero(titulo, data, comVoltar, curto) {
+    limpar();
+    var h = el('section', curto ? 'hero curto' : 'hero');
+    var topo = el('div', 'hero-topo');
+    if (comVoltar) {
+      var v = el('button', 'voltar', '← Todos os capítulos');
+      v.onclick = indice;
+      topo.appendChild(v);
+    }
+    h.appendChild(topo);
+    var t = el('div', 'hero-titulo');
+    if (data) t.appendChild(el('div', 'data', fmtData(data)));
+    t.appendChild(comRiscado(el('h1'), titulo));
+    h.appendChild(t);
+    app.appendChild(h);
+    var corpo = el('div', 'corpo');
+    app.appendChild(corpo);
+    return corpo;
+  }
+
+  function caixa(raiz, titulo) {
+    var b = el('div', 'painel');
+    b.appendChild(el('h2', null, titulo));
+    raiz.appendChild(b);
+    return b;
+  }
+
+  function imgFoto(f, w) {
+    var i = document.createElement('img');
+    i.alt = semExt(f.nome);
+    i.className = 'esperando';
+    carregarImg(f.id, w, function (u) {
+      i.classList.remove('esperando');
+      if (u) i.src = u; else i.classList.add('falhou');
+    });
+    i.onclick = function () { abrir(i, f.id); };
+    return i;
+  }
+
+  function acharArquivo(lista, ref) {
+    ref = String(ref).toLowerCase();
+    for (var k = 0; k < lista.length; k++) {
+      var nome = String(lista[k].nome).toLowerCase();
+      if (nome.indexOf(ref) === 0 && !/\d/.test(nome.charAt(ref.length))) return lista[k];
+    }
+    return null;
+  }
+
+  // Player de áudio estilo Instagram ou WhatsApp
+  function vozPlayer(a, estilo) {
+    var w = el('div', 'voz ' + (estilo === 'instagram' ? 'voz-ig' : 'voz-wa'));
+    var btn = el('button', 'voz-play');
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Tocar áudio');
+    btn.innerHTML = PLAY;
+    var onda = el('div', 'voz-onda');
+    var N = 30, barras = [], seed = 7, k, j;
+    for (k = 0; k < a.id.length; k++) seed = (seed * 31 + a.id.charCodeAt(k)) % 100003;
+    for (j = 0; j < N; j++) {
+      seed = (seed * 9301 + 49297) % 233280;
+      var b = document.createElement('i');
+      b.style.height = (22 + Math.round(seed / 233280 * 78)) + '%';
+      barras.push(b);
+      onda.appendChild(b);
+    }
+    var ponto = el('span', 'voz-ponto');
+    onda.appendChild(ponto);
+    var tempo = el('span', 'voz-tempo', '0:00');
+    w.appendChild(btn); w.appendChild(onda); w.appendChild(tempo);
+
+    var audio = null, estado = 'novo';
+
+    function atualizar() {
+      var d = audio && isFinite(audio.duration) ? audio.duration : 0;
+      var r = d ? audio.currentTime / d : 0;
+      var n = Math.round(r * N);
+      for (var q = 0; q < N; q++) barras[q].className = q < n ? 'on' : '';
+      ponto.style.left = (r * 100) + '%';
+      tempo.textContent = mmss(audio && audio.currentTime > 0 ? audio.currentTime : d);
+    }
+
+    function carregar() {
+      if (estado !== 'novo') return;
+      estado = 'carregando';
+      w.classList.add('carregando');
+      baixarMidia(a.id, null, function (url) {
+        audio = new Audio(url);
+        audio.preload = 'metadata';
+        audio.addEventListener('loadedmetadata', atualizar);
+        audio.addEventListener('timeupdate', atualizar);
+        audio.addEventListener('play', function () { btn.innerHTML = PAUSE; });
+        audio.addEventListener('pause', function () { btn.innerHTML = PLAY; });
+        audio.addEventListener('ended', function () { audio.currentTime = 0; btn.innerHTML = PLAY; atualizar(); });
+        estado = 'pronto';
+        w.classList.remove('carregando');
+      }, function () {
+        estado = 'erro'; tempo.textContent = 'erro';
+        w.classList.remove('carregando');
+      });
+    }
+
+    btn.onclick = function () {
+      if (estado !== 'pronto') return;
+      if (audio.paused) {
+        if (tocando && tocando !== audio) tocando.pause();
+        tocando = audio;
+        var p = audio.play();
+        if (p && p.catch) p.catch(function () {});
+      } else {
+        audio.pause();
+      }
+    };
+    onda.onclick = function (e) {
+      if (estado !== 'pronto' || !isFinite(audio.duration)) return;
+      var rect = onda.getBoundingClientRect();
+      var r = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      audio.currentTime = r * audio.duration;
+      atualizar();
+    };
+
+    carregar();
+    return w;
+  }
+
+  // Player de vídeo: mostra a capa e baixa o vídeo quando chega perto da tela.
+  function videoPlayer(vd, tamanho, formato) {
+    var cx = el('div', 'video-box' + (tamanho === 'medio' ? ' medio' : '') + (formato === 'vertical' ? ' vertical' : ''));
+    var tela = el('div', 'video-tela');
+    var aviso = el('div', 'video-aviso', 'Carregando vídeo…');
+    tela.appendChild(aviso);
+    cx.appendChild(tela);
+    carregarImg(vd.id, 800, function (u) {
+      if (u && !tela.querySelector('video')) tela.style.backgroundImage = 'url("' + u + '")';
+    });
+    var comecou = false;
+    function comecar() {
+      if (comecou) return;
+      comecou = true;
+      baixarMidia(vd.id, function (p) {
+        aviso.textContent = 'Carregando vídeo… ' + p + '%';
+      }, function (url) {
+        var v = document.createElement('video');
+        v.controls = true;
+        v.playsInline = true;
+        v.setAttribute('playsinline', '');
+        v.preload = 'metadata';
+        v.src = url;
+        v.addEventListener('play', function () {
+          if (tocando && tocando !== v) tocando.pause();
+          tocando = v;
+        });
+        tela.textContent = '';
+        tela.style.backgroundImage = 'none';
+        tela.appendChild(v);
+      }, function () {
+        aviso.textContent = 'Não consegui carregar o vídeo.';
+      });
+    }
+    setTimeout(function () { observar(cx, comecar); }, 0);
+    return cx;
+  }
+
+  function renderBlocos(c, raiz) {
+    var usadas = {};
+    c.blocos.forEach(function (b) {
+      if (!b) return;
+
+      if (b.audio) {
+        var au = acharArquivo(c.audios, b.audio);
+        if (au) {
+          usadas[au.id] = true;
+          var ba = el('div', 'bloco');
+          ba.appendChild(vozPlayer(au, b.estilo));
+          raiz.appendChild(ba);
+        }
+        return;
+      }
+
+      if (b.video) {
+        var vd = acharArquivo(c.videos, b.video);
+        if (vd) {
+          usadas[vd.id] = true;
+          var bv = el('div', 'bloco');
+          bv.appendChild(videoPlayer(vd, b.tamanho, b.formato));
+          raiz.appendChild(bv);
+        }
+        return;
+      }
+
+      var fs = [];
+      (b.fotos || []).forEach(function (ref) {
+        var f = acharArquivo(c.fotos, ref);
+        if (f) { fs.push(f); usadas[f.id] = true; }
+      });
+      var temTexto = b.texto && String(b.texto).trim();
+      if (!fs.length && !temTexto) return;
+
+      var bloco = el('div', 'bloco');
+      var caixaFotos = null;
+      if (fs.length) {
+        caixaFotos = el('div', 'fotos-bloco n' + Math.min(fs.length, 3));
+        fs.forEach(function (f) { caixaFotos.appendChild(imgFoto(f, fs.length === 1 ? (b.tamanho === 'medio' ? 900 : 1400) : 900)); });
+      }
+      var nota = temTexto ? el('p', 'nota', String(b.texto)) : null;
+
+      if (caixaFotos && nota) {
+        var dir = b.lado === 'direita';
+        bloco.className = 'bloco lado ' + (dir ? 'dir' : 'esq');
+        if (dir) { bloco.appendChild(caixaFotos); bloco.appendChild(nota); }
+        else { bloco.appendChild(nota); bloco.appendChild(caixaFotos); }
+      } else if (caixaFotos) {
+        bloco.className = 'bloco solo' + (b.tamanho === 'medio' ? ' medio' : '');
+        bloco.appendChild(caixaFotos);
+      } else {
+        bloco.appendChild(nota);
+      }
+      raiz.appendChild(bloco);
+    });
+    return usadas;
+  }
+
+  function renderIndice(lista) {
+    definirFundo(fundoGlobal);
+    var raiz = montarHero('Nosso álbum', '', false, true);
+    if (!lista.length) { raiz.appendChild(el('p', 'msg', 'Ainda não há capítulos.')); return; }
+    var box = el('div', 'lista');
+    lista.forEach(function (c) {
+      var b = el('button', 'card');
+      b.appendChild(el('div', 'data', fmtData(c.data)));
+      b.appendChild(comRiscado(el('div', 't'), c.titulo));
+      b.onclick = function () { capitulo(c.id); };
+      box.appendChild(b);
+    });
+    raiz.appendChild(box);
+  }
+
+  function renderCapitulo(c) {
+    definirFundo(c.fundo || fundoGlobal);
+    var raiz = montarHero(c.titulo, c.data, true, false);
+    if (c.legenda) raiz.appendChild(el('p', 'legenda', c.legenda));
+    if (c.texto) {
+      String(c.texto).split(/\n\s*\n/).forEach(function (p) { raiz.appendChild(el('p', 'nota', p)); });
+    }
+
+    var temBlocos = c.blocos && c.blocos.length;
+    var usadas = temBlocos ? renderBlocos(c, raiz) : {};
+
+    if (c.links && c.links.length) {
+      var bl = caixa(raiz, 'Links');
+      var ul = el('ul', 'links');
+      c.links.forEach(function (l) {
+        var li = el('li');
+        var a = el('a', null, l.rotulo || l.url);
+        a.href = l.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        li.appendChild(a); ul.appendChild(li);
+      });
+      bl.appendChild(ul);
+    }
+
+    var restantes = c.fotos.filter(function (f) { return !usadas[f.id]; });
+    if (restantes.length) {
+      var bf = caixa(raiz, temBlocos ? 'Mais fotos' : 'Fotos');
+      var g = el('div', 'fotos');
+      restantes.forEach(function (f, n) {
+        var i = imgFoto(f, !temBlocos && n === 0 ? 1200 : 700);
+        if (!temBlocos) i.classList.add(n === 0 ? 'g' : (n === 4 ? 'm' : 'p'));
+        g.appendChild(i);
+      });
+      bf.appendChild(g);
+    }
+
+    var audios = c.audios.filter(function (a) { return !usadas[a.id]; });
+    if (audios.length) {
+      var ba = caixa(raiz, 'Áudios');
+      audios.forEach(function (a) {
+        var w = el('div', 'item');
+        w.appendChild(el('p', 'item-nome', semExt(a.nome)));
+        w.appendChild(vozPlayer(a, 'whatsapp'));
+        ba.appendChild(w);
+      });
+    }
+
+    var videos = c.videos.filter(function (v) { return !usadas[v.id]; });
+    if (videos.length) {
+      var bv = caixa(raiz, 'Vídeos');
+      videos.forEach(function (vd) {
+        var w = el('div', 'item');
+        w.appendChild(el('p', 'item-nome', semExt(vd.nome)));
+        w.appendChild(videoPlayer(vd, 'medio', ''));
+        bv.appendChild(w);
+      });
+    }
+
+    if (c.outros.length) {
+      var bo = caixa(raiz, 'Arquivos');
+      var ul2 = el('ul', 'links');
+      c.outros.forEach(function (o) {
+        var li = el('li');
+        var a = el('a', null, o.nome);
+        a.href = 'https://drive.google.com/file/d/' + encodeURIComponent(o.id) + '/view';
+        a.target = '_blank'; a.rel = 'noopener noreferrer';
+        li.appendChild(a); ul2.appendChild(li);
+      });
+      bo.appendChild(ul2);
+    }
+  }
+
+  function iniciar() {
+    if (!TOKEN) { telaLogin(); return; }
+    chamar('obterFundo', [], function (id) {
+      fundoGlobal = id || '';
+      if (!fundoAtual) definirFundo(fundoGlobal);
+    });
+    if (inicial) capitulo(inicial); else indice();
+  }
+
+  iniciar();
+})();
+</script>
+</body>
+</html>
