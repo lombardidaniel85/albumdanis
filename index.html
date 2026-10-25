@@ -455,6 +455,13 @@
     im.src = u;
   }
 
+  // "girar" pode ser um número (vale para todas as fotos do bloco)
+  // ou um objeto com o número da foto: { "03": 90 }
+  function girarDe(girar, ref) {
+    if (girar && typeof girar === 'object') return girar[String(ref)] || 0;
+    return girar || 0;
+  }
+
   function imgFoto(f, w, girar) {
     var i = document.createElement('img');
     girar = ({ 90: 90, 180: 180, 270: 270, '-90': 270 })[String(girar)] || 0;
@@ -623,7 +630,7 @@
           usadas[au2.id] = true; usadas[f3.id] = true;
           var da = el('div', 'bloco duo-audio' + (b.lado === 'esquerda' ? ' inv' : ''));
           var cf3 = el('div', 'fotos-bloco n1');
-          cf3.appendChild(imgFoto(f3, 900, b.girar));
+          cf3.appendChild(imgFoto(f3, 900, girarDe(b.girar, b.fotos[0])));
           var ap = vozPlayer(au2, b.estilo, b);
           if (b.lado === 'esquerda') { da.appendChild(ap); da.appendChild(cf3); }
           else { da.appendChild(cf3); da.appendChild(ap); }
@@ -657,7 +664,7 @@
           usadas[vd2.id] = true; usadas[f2.id] = true;
           var duo = el('div', 'bloco duo');
           var cf = el('div', 'fotos-bloco n1');
-          cf.appendChild(imgFoto(f2, 900, b.girar));
+          cf.appendChild(imgFoto(f2, 900, girarDe(b.girar, b.fotos[0])));
           var vv = videoPlayer(vd2, 'medio', b.formato === 'horizontal' ? '' : 'vertical');
           if (b.lado === 'esquerda') { duo.appendChild(vv); duo.appendChild(cf); }
           else { duo.appendChild(cf); duo.appendChild(vv); }
@@ -675,7 +682,7 @@
           // Não achou o vídeo: mostra a foto com um aviso visível, para facilitar o conserto.
           var duo2 = el('div', 'bloco duo');
           var cf2 = el('div', 'fotos-bloco n1');
-          if (f2) { usadas[f2.id] = true; cf2.appendChild(imgFoto(f2, 900, b.girar)); }
+          if (f2) { usadas[f2.id] = true; cf2.appendChild(imgFoto(f2, 900, girarDe(b.girar, b.fotos[0]))); }
           var av = el('div', 'video-tela');
           av.appendChild(el('div', 'video-aviso', 'Vídeo "' + b.video + '" não encontrado na pasta'));
           av.firstChild.style.whiteSpace = 'normal'; av.firstChild.style.textAlign = 'center'; av.firstChild.style.maxWidth = '90%';
@@ -695,10 +702,10 @@
         return;
       }
 
-      var fs = [];
+      var fs = [], refs = [];
       (b.fotos || []).forEach(function (ref) {
         var f = acharArquivo(c.fotos, ref);
-        if (f) { fs.push(f); usadas[f.id] = true; }
+        if (f) { fs.push(f); refs.push(ref); usadas[f.id] = true; }
       });
       var temTexto = b.texto && String(b.texto).trim();
       if (!fs.length && !temTexto) return;
@@ -707,7 +714,7 @@
       var caixaFotos = null;
       if (fs.length) {
         caixaFotos = el('div', 'fotos-bloco n' + Math.min(fs.length, 4));
-        fs.forEach(function (f) { caixaFotos.appendChild(imgFoto(f, fs.length === 1 ? (b.tamanho === 'medio' ? 900 : 1400) : (fs.length > 2 ? 700 : 900), b.girar)); });
+        fs.forEach(function (f, q) { caixaFotos.appendChild(imgFoto(f, fs.length === 1 ? (b.tamanho === 'medio' ? 900 : 1400) : (fs.length > 2 ? 700 : 900), girarDe(b.girar, refs[q]))); });
       }
       var nota = temTexto ? el('p', 'nota' + (b.tamanho === 'grande' ? ' grande' : ''), String(b.texto)) : null;
 
