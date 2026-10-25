@@ -142,6 +142,17 @@
   .login .link{background:none;color:var(--acc);font-weight:500;margin-top:10px;padding:6px}
   .login .erro{color:#c0392b;min-height:1.4em;margin:8px 0 0;font-size:.9rem}
 
+  .musica-btn{position:fixed;right:16px;bottom:16px;z-index:6;width:48px;height:48px;border:0;border-radius:50%;display:none;align-items:center;justify-content:center;cursor:pointer;color:var(--fg);background:var(--painel);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 4px 16px rgba(0,0,0,.3);padding:0}
+  .musica-btn svg{width:24px;height:24px;fill:currentColor}
+  .musica-btn:not(.tocando)::after{content:"";position:absolute;width:30px;height:2px;background:currentColor;transform:rotate(-45deg);border-radius:2px;opacity:.8}
+  .musica-btn.carregando{opacity:.6}
+  .musica-btn .eq{display:none;align-items:flex-end;gap:3px;height:18px}
+  .musica-btn .eq i{display:block;width:4px;background:currentColor;border-radius:2px;animation:eq 1s ease-in-out infinite}
+  .musica-btn .eq i:nth-child(2){animation-delay:.25s}
+  .musica-btn .eq i:nth-child(3){animation-delay:.5s}
+  .musica-btn.tocando .nota{display:none}
+  .musica-btn.tocando .eq{display:flex}
+  @keyframes eq{0%,100%{height:5px}50%{height:18px}}
   #lb{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:10;cursor:zoom-out}
   #lb img{max-width:96vw;max-height:94vh;object-fit:contain}
 </style>
@@ -308,6 +319,65 @@
     });
   }
 
+  // ---------- música de fundo ----------
+  // Arquivo "musica.mp3" (ou .m4a) na pasta "Album Danis" vale para o álbum todo.
+  // Um "musica.mp3" dentro da pasta de um capítulo vale só para ele.
+  var musica = { audio: new Audio(), id: '', pronto: false, quer: false, suspensa: 0 };
+  var musicaGlobal = '', musicaCapitulo = '', btnMusica = null;
+  musica.audio.loop = true; musica.audio.volume = 0.45;
+
+  function botaoMusica() {
+    if (btnMusica) return btnMusica;
+    var b = el('button', 'musica-btn');
+    b.type = 'button';
+    b.setAttribute('aria-label', 'Música de fundo');
+    b.innerHTML = '<svg class="nota" viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg><span class="eq"><i></i><i></i><i></i></span>';
+    b.onclick = function () { musica.quer = !musica.quer; aplicarMusica(); };
+    document.body.appendChild(b);
+    btnMusica = b;
+    return b;
+  }
+  function aplicarMusica() {
+    var b = botaoMusica();
+    var tocar = musica.quer && musica.pronto && !musica.suspensa;
+    if (tocar) {
+      var p = musica.audio.play();
+      if (p && p.catch) p.catch(function () { musica.quer = false; aplicarMusica(); });
+    } else {
+      musica.audio.pause();
+    }
+    b.className = 'musica-btn' + (musica.quer ? ' tocando' : '') + (musica.quer && !musica.pronto ? ' carregando' : '');
+    b.style.display = musica.id ? 'flex' : 'none';
+  }
+  function definirMusica(id) {
+    id = id || '';
+    if (id === musica.id) { aplicarMusica(); return; }
+    musica.audio.pause();
+    musica.id = id; musica.pronto = false;
+    aplicarMusica();
+    if (!id) return;
+    setTimeout(function () {
+      if (musica.id !== id) return;
+      baixarMidia(id, null, function (url) {
+        if (musica.id !== id) return;
+        musica.audio.src = url;
+        musica.pronto = true;
+        aplicarMusica();
+      }, function () {
+        if (musica.id === id) { musica.id = ''; musica.quer = false; aplicarMusica(); }
+      });
+    }, 1200);
+  }
+  function escolherMusica() { definirMusica(musicaCapitulo || musicaGlobal); }
+  // Pausa a música enquanto um áudio ou vídeo toca e volta depois.
+  function ligarMidia(m) {
+    var ativo = false;
+    m.addEventListener('play', function () { if (!ativo) { ativo = true; musica.suspensa++; aplicarMusica(); } });
+    function fim() { if (ativo) { ativo = false; musica.suspensa = Math.max(0, musica.suspensa - 1); aplicarMusica(); } }
+    m.addEventListener('pause', fim);
+    m.addEventListener('ended', fim);
+  }
+
   // ---------- fundo e lightbox ----------
   function definirFundo(id) {
     fundoAtual = id || '';
@@ -335,6 +405,8 @@
     salvarToken('');
     filaImg = [];
     definirFundo('');
+    musica.quer = false;
+    definirMusica('');
     limpar();
     var box = el('div', 'login');
     box.appendChild(el('h1', null, 'Nosso álbum'));
@@ -529,6 +601,7 @@
       baixarMidia(a.id, null, function (url) {
         audio = new Audio(url);
         audio.preload = 'metadata';
+        ligarMidia(audio);
         audio.addEventListener('loadedmetadata', atualizar);
         audio.addEventListener('timeupdate', atualizar);
         audio.addEventListener('play', function () { btn.innerHTML = PAUSE; });
@@ -595,6 +668,7 @@
         v.setAttribute('playsinline', '');
         v.preload = 'metadata';
         v.src = url;
+        ligarMidia(v);
         v.addEventListener('play', function () {
           if (tocando && tocando !== v) tocando.pause();
           tocando = v;
@@ -737,6 +811,8 @@
 
   function renderIndice(lista) {
     definirFundo(fundoGlobal);
+    musicaCapitulo = '';
+    escolherMusica();
     var raiz = montarHero('Nosso álbum', '', false, true);
     if (!lista.length) { raiz.appendChild(el('p', 'msg', 'Ainda não há capítulos.')); return; }
     var box = el('div', 'lista');
@@ -752,6 +828,13 @@
 
   function renderCapitulo(c) {
     definirFundo(c.fundo || fundoGlobal);
+    var mus = null;
+    c.audios = c.audios.filter(function (a) {
+      if (/^musica\./i.test(a.nome)) { mus = a; return false; }
+      return true;
+    });
+    musicaCapitulo = mus ? mus.id : '';
+    escolherMusica();
     var raiz = montarHero(c.titulo, c.data, true, false);
     if (c.legenda) raiz.appendChild(el('p', 'legenda', c.legenda));
     if (c.texto) {
@@ -826,6 +909,10 @@
     chamar('obterFundo', [], function (id) {
       fundoGlobal = id || '';
       if (!fundoAtual) definirFundo(fundoGlobal);
+    });
+    chamar('obterMusica', [], function (id) {
+      musicaGlobal = id || '';
+      if (!musicaCapitulo) escolherMusica();
     });
     if (inicial) capitulo(inicial); else indice();
   }
